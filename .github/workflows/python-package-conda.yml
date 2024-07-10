@@ -1,19 +1,26 @@
 name: Python Package using Conda
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: true
       max-parallel: 5
+      matrix:
+        python-version: ["3.11"]
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.11
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
-        python-version: '3.11'
+        python-version: ${{ matrix.python-version }}
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
