@@ -1,0 +1,9 @@
+name: BunnyHop
+channels:
+  - esri
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - arcpy
+  - arcgis
