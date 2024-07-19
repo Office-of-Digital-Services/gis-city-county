@@ -12,8 +12,7 @@ jobs:
       - name: Flake8 Lint
         run: |
           pip install flake8
-          cd packages
-          flake8 --ignore=W191,E501,E128,E124,E126,E127 BunnyHop
+          flake8 --ignore=W191,E501,E128,E124,E126,E127 /home/runner/work/cdt-ods-gis-boe-dla-merge/cdt-ods-gis-boe-dla-merge/packages/BunnyHop
 
   Type-Check:
     runs-on: ubuntu-latest
@@ -25,4 +24,4 @@ jobs:
         run: |
           pip install mypy types-requests pandas-stubs typing_extensions
           cd packages
-          mypy -p BunnyHop
+          mypy /home/runner/work/cdt-ods-gis-boe-dla-merge/cdt-ods-gis-boe-dla-merge/packages/BunnyHop
