@@ -39,13 +39,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        echo ${{ toJson(github.event) }}
         python -m pip install --upgrade pip
         python -m pip install build
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         python -m build
         
   deploy:
+    # don't run the deploy on PRs, but do it for the others
+    if: github.event.pull_request.state != 'open'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
