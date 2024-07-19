@@ -12,7 +12,8 @@ jobs:
       - name: Flake8 Lint
         run: |
           pip install flake8
-          flake8 --ignore=W191,E501,E128,E124,E126,E127 packages/BunnyHop
+          cd packages
+          flake8 --ignore=W191,E501,E128,E124,E126,E127 BunnyHop
 
   Type-Check:
     runs-on: ubuntu-latest
@@ -23,4 +24,5 @@ jobs:
       - name: mypy check
         run: |
           pip install mypy types-requests pandas-stubs typing_extensions
-          mypy -p /packages/BunnyHop
+          cd packages
+          mypy -p BunnyHop
