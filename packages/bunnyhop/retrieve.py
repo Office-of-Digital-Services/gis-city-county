@@ -4,6 +4,8 @@
 
 from . import config
 
+from typing import Optional
+import pathlib
 import zipfile
 import tempfile
 import csv
@@ -14,7 +16,7 @@ class BOERetrieve():
     pass
 
 
-def retrieve_gnis(source=config.GNIS_URL) -> pandas.DataFrame:
+def retrieve_gnis(source=config.GNIS_URL, output_folder: Optional[pathlib.PurePath]=None) -> pandas.DataFrame:
     """Retrieves, decompresses, and loads the GNIS data into a pandas data frame, which it retuns to the callers
 
     Args:
@@ -35,6 +37,12 @@ def retrieve_gnis(source=config.GNIS_URL) -> pandas.DataFrame:
         with zipf.open(name=config.GNIS_ZIP_FILE_PATH) as gnis_data:
             gnis_df: pandas.DataFrame = pandas.read_csv(filepath_or_buffer=gnis_data, sep="|")
 
-    return gnis_df # return the data as a data frame - another function can load it into an arcgis data structure if needed
+    output_csv: Optional[pathlib.PurePath] = None
+    if output_folder:
+        output_csv = output_folder/"gnis_raw_input_data.csv"
+        print(f"OUTPUT CSV: {output_csv}")
+        gnis_df.to_csv(str(output_csv))
+
+    return {'df': gnis_df, 'csv': output_csv}  # return the data as a data frame - another function can load it into an arcgis data structure if needed
 
     

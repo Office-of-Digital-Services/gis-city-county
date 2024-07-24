@@ -1,1 +1,18 @@
-__version__ = "2024.07.12"
+__version__ = "2024.07.24"
+
+import os
+import sys
+
+def locked_down_path_fix():
+    """
+        On CDT computers, conda environments can't be activated normally, which seems to interfere
+        with the search path when calling the python executable from the conda clone itself without
+        activating it first. This hack inserts the parent directory of this package into the
+        beginning of the search path so that anything in this directory can be found.
+    """
+    if "USERDOMAIN" in os.environ and os.environ["USERDOMAIN"] == "TDC":
+        print("performing locked down path fix")
+        insert_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sys.path.insert(0, insert_path)
+
+# locked_down_path_fix()
