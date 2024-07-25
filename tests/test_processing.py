@@ -1,9 +1,6 @@
 from pandas import DataFrame
 import pytest
 
-import os
-import sys
-sys.path.insert(0, os.getcwd())
 
 from bunnyhop import retrieve, bunny
 

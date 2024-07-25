@@ -1,9 +1,9 @@
 {
-    "python.defaultInterpreterPath": "C:\\Users\\nick.santos\\AppData\\Local\\ESRI\\conda\\envs\\arcgispro-bunnyhop\\python.exe",
-    "python.testing.cwd": "${workspaceFolder}\\packages",
+    "python.defaultInterpreterPath": "C:\\Users\\nick.santos\\environments\\arcgis-bunnyhop\\python.exe",
+    "python.testing.cwd": "${workspaceFolder}",
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
-        "tests"
+        "${workspaceFolder}\\tests"
     ],
     "python.testing.unittestEnabled": false,
     "python.terminal.activateEnvInCurrentTerminal": true,

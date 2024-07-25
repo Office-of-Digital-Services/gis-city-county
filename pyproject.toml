@@ -2,11 +2,28 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "src/bunnyhop/__init__.py"
+
 [project]
-name = "BunnyHop"
+name = "bunnyhop"
 dynamic = ["version"]
 dependencies = [
-    "arcpy",
-    "arcgis",
-    "requests",
+    "requests"
+]
+requires-python = ">=3.11.0"
+authors = [{name="Nick Santos"}]
+license = {text = "BSD-3-Clause"}
+readme = "README.md"
+
+[project.optional-dependencies]
+test = [
+    "pytest == 8.2.0",
+]
+lint = [
+    "flake8",
+    "mypy"
+]
+dev = [
+    "bunnyhop[test,lint]",
 ]
