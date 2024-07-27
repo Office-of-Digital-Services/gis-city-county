@@ -8,7 +8,7 @@ from typing import Optional
 import pathlib
 import zipfile
 import tempfile
-import csv
+import datetime
 
 import requests
 import pandas
@@ -46,3 +46,10 @@ def retrieve_gnis(source=config.GNIS_URL, output_folder: Optional[pathlib.PurePa
     return {'df': gnis_df, 'csv': output_csv}  # return the data as a data frame - another function can load it into an arcgis data structure if needed
 
     
+def retrieve_census():
+    """
+        The census retrieval may be a bit funky. We need to find the most recent year of data that has a particular file, then ensure that the file
+        has the needed columns existing (and maybe even populated? Check with Liana)
+    """
+
+    datetime.datetime.now(tz=datetime.UTC)
