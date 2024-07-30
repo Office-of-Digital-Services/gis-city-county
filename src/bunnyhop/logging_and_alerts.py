@@ -6,3 +6,7 @@
     GitHub could be a great spot to post the log. On success, we create an issue there, then close it immediately.
     On failure, we create the issue (with a scary title), then leave it open and assign it to Nick.
 """
+
+import logging
+
+logging.getLogger("bunnyhop")

@@ -7,41 +7,10 @@
     and CalTrans data transformation
 """
 
-import tempfile
-from typing import Optional
-import pathlib
-import os
+from . import config
 
 import arcpy
 
-IN_ARCGIS_ONLINE_NOTEBOOKS = True if os.getcwd() == "/arcgis" else False  
-
-FOLDER_WORKSPACE: Optional[pathlib.PurePath] = None
-
-def create_workspace():
-    """
-        Ensures that we have a workspace to write outputs to - sets it to both the default and scratch workspaces for everything els
-        By default, creates a file geodatabase. When it detects it's in ArcGIS Online Notebooks, it places this
-        geodatabase in the /arcgis/home folder. Otherwise, it generates a folder path with the tempfile package
-
-    Returns:
-        pathlib.PurePath: The full path to the file geodatabase workspace
-    """
-    workspace_directory: Optional[pathlib.PurePath] = None
-
-    if IN_ARCGIS_ONLINE_NOTEBOOKS:
-        workspace_directory = pathlib.PurePath(os.getcwd()) / "home" / "workspace"
-    else:
-        workspace_directory = pathlib.PurePath(tempfile.mkdtemp(prefix="bunnyhop_workspace"))
-
-    gdb_name = "bunnyhop_workspace.gdb"
-    gdb_path = workspace_directory / gdb_name
-    arcpy.management.CreateFileGDB(str(workspace_directory), gdb_name)
-
-    arcpy.env.workspace = str(gdb_path)
-    arcpy.env.scratchWorkspace = str(gdb_path)
-
-    return workspace_directory, gdb_path
 
 
 def process_gnis(local_gnis_table):
@@ -76,7 +45,7 @@ def split_name(classcode, name):
 
 
 def run():
-    folder, gdb = create_workspace()
-    FOLDER_WORKSPACE = folder
+    config.startup()
+
 
     
