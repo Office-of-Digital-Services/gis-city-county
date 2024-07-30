@@ -1,9 +1,15 @@
+import logging.config
 import tempfile
 from typing import Optional
 import pathlib
 import os
-from config_github import *
 import logging
+from logging.config import dictConfig
+
+from .config_github import *
+from .logging_and_alerts import *
+
+import arcpy
 
 GNIS_URL = "https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/FederalCodes/FedCodes_CA_Text.zip"
 GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to extract from the zip file?
@@ -19,36 +25,6 @@ IN_ARCGIS_ONLINE_NOTEBOOKS = True if os.getcwd() == "/arcgis" else False
 FOLDER_WORKSPACE: Optional[pathlib.PurePath] = None
 GDB_WORKSPACE: Optional[pathlib.PurePath] = None
 
-
-LOG_FILE_PATH = "logs/run_log.txt"  # we'll overwrite this at runtime, most likely
-LOGGING_CONFIG = {
-    "formatters":{
-        "default":{
-            "format": "%(asctime)s %(levelname)-8s %(name)-15s %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M:%S"
-        },
-    },
-    "handlers":{
-        "console":{
-            "class": logging.StreamHandler,
-            "level": logging.DEBUG,
-            "stream": "ext://sys.stdout",
-            "formatter": "default"
-        },
-        "file":{
-            "class": logging.handlers.RotatingFileHandler,
-            "filename": LOG_FILE_PATH,  # we'll overwrite this at runtime, most likely
-            "maxBytes": 4096,
-            "formatter": "default"
-        }
-    },
-    "loggers":{
-        "bunnyhop": {
-            "handlers": ["console", "file"]
-        }
-    }
-
-}
 
 
 
@@ -78,8 +54,14 @@ def create_workspace():
     return workspace_directory, gdb_path
 
 
-def config_logging():
-    logging.config.dictConfig(LOGGING_CONFIG)
+def config_logging(config):
+    # make sure the folder to the log file exists
+    os.makedirs(os.path.dirname(config["handlers"]["file_logger"]["filename"]), exist_ok=True)
+
+    dictConfig(config)
+    log = logging.getLogger("bunnyhop")
+
+    log.info("Logging configured")
 
 
 def startup():
@@ -92,6 +74,10 @@ def startup():
     FOLDER_WORKSPACE = workspace_dir
     GDB_WORKSPACE = gdb_path
     LOG_FILE_PATH = log_path
-    LOGGING_CONFIG["handlers"]["file"]["filename"] = log_path
+    LOGGING_CONFIG["handlers"]["file_logger"]["filename"] = str(log_path)
+    print(str(log_path))
 
-    config_logging()
+    config_logging(config=LOGGING_CONFIG)
+
+    log = logging.getLogger("bunnyhop")
+    log.info("Hop hop!")
