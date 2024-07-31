@@ -12,10 +12,13 @@ from .logging_and_alerts import *
 
 import arcpy
 
+GET_GNIS = False
 GNIS_URL = "https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/FederalCodes/FedCodes_CA_Text.zip"
 GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to extract from the zip file?
 
 ### CENSUS CONFIGS ###
+
+GET_CENSUS = True
 
 # we do an iterative check for the census data (described in the code itself), starting with the current year, then going back
 # to earlier years until we find a good one. What's the earliest year we should use? Set this to a year you know has good

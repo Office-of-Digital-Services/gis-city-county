@@ -44,7 +44,7 @@ def retrieve_gnis(source=config.GNIS_URL, output_folder: Optional[pathlib.PurePa
     if output_folder:
         output_csv = output_folder/"gnis_raw_input_data.csv"
         print(f"OUTPUT CSV: {output_csv}")
-        gnis_df.to_csv(str(output_csv))
+        gnis_df.to_csv(str(output_csv), index=False)
 
     log.info("GNIS retrieval complete")
     return {'df': gnis_df, 'csv': output_csv} 
@@ -76,7 +76,7 @@ def retrieve_census(output_folder):
         log.debug(f"Checking for Census data for year {check_year}")
         found = _check_for_year_census_file(check_year, filepath_on_success=output_csv)
         if found:
-            log.debug("Census data found.")
+            log.debug(f"Census data found for year {check_year}")
             break
         log.debug("Data not found or missing required information. Trying next")
         check_year -= 1
@@ -97,17 +97,31 @@ def _check_for_year_census_file(year, filepath_on_success):
     # check for the year's file
     if requests.head(census_file).status_code != 404:
         census_local = download_file(census_file, "xlsx")
-        df = pandas.read_excel(census_local, skiprows=4)
+        df = pandas.read_excel(census_local,
+                                skiprows=4,
+                                dtype={
+                                    "State FIPS Code": str,
+                                    "County FIPS Code": str,
+                                    "County Subdivision FIPS Code": str,
+                                    "Place FIPS Code": str,
+                                    "Consolidated City FIPS Code": str,
+                                    "Area Name": str,
+                               })
+        
+        # replace all the spaces in the column names with underscores using a dictionary comprehension
+        df.rename(columns={value: value.replace(" ", "_") for value in df.columns}, inplace=True)
 
-        california = df.loc[df["State FIPS Code"] == 6,].reset_index()
-        california["has_data"] = california.loc[:,["County FIPS Code", "County Subdivision FIPS Code", "Place FIPS Code", "Consolidated City FIPS Code"]].any(axis=1) 
+        california = df.loc[df["State_FIPS_Code"] == "06",].reset_index(drop=True)
+        california["has_data"] = california.loc[:,["County_FIPS_Code", "County_Subdivision_FIPS_Code", "Place_FIPS_Code", "Consolidated_City_FIPS_Code"]].any(axis=1) 
         # we'd expect a certain number of missing records. 2022's has 53 missing, but there could be more
         missing_count = california["has_data"].count() - california["has_data"].sum()
         if missing_count > 5: # we expect 1, but error out if there are more than a few in case we're missing some for new places.
             return False
 
         # if we're successful, write the filtered DF to the provided path and return True
-        california.to_csv(str(filepath_on_success))
+        del california["has_data"] # we don't need that column - it was just a check
+        california.reset_index(drop=True, inplace=True)
+        california.to_csv(str(filepath_on_success), index=False)
         return True
     else:
         return False
