@@ -8,8 +8,10 @@
 """
 
 from . import config
+from . import retrieve
 
 import arcpy
+import pandas
 
 
 
@@ -43,9 +45,13 @@ def split_name(classcode, name):
                                     )
     
 
+def flow(output_folder):
+    
+    gnis_data: pandas.DataFrame = retrieve.retrieve_gnis(output_folder=output_folder)
+    process_gnis(str(gnis_data['csv']))
+    
+    census_data = retrieve.retrieve_census(output_folder=output_folder)
 
-def run():
-    config.startup()
 
 
     

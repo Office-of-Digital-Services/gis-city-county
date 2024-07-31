@@ -5,6 +5,7 @@ import pathlib
 import os
 import logging
 from logging.config import dictConfig
+from string import Template
 
 from .config_github import *
 from .logging_and_alerts import *
@@ -20,6 +21,8 @@ GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to 
 # to earlier years until we find a good one. What's the earliest year we should use? Set this to a year you know has good
 # data with all the variables filled in.
 CENSUS_EARLIEST_YEAR = 2023  # don't check any years earlier (e.g. 2022) than this. If 2023 fails for some reason, just STOP.
+CENSUS_FOLDER_URL = Template("https://www2.census.gov/programs-surveys/popest/geographies/$year/")
+CENSUS_FILE_URL = Template("https://www2.census.gov/programs-surveys/popest/geographies/$year/all-geocodes-v$year.xlsx")
 
 IN_ARCGIS_ONLINE_NOTEBOOKS = True if os.getcwd() == "/arcgis" else False  
 FOLDER_WORKSPACE: Optional[pathlib.PurePath] = None
@@ -75,9 +78,10 @@ def startup():
     GDB_WORKSPACE = gdb_path
     LOG_FILE_PATH = log_path
     LOGGING_CONFIG["handlers"]["file_logger"]["filename"] = str(log_path)
-    print(str(log_path))
-
+    
     config_logging(config=LOGGING_CONFIG)
 
     log = logging.getLogger("bunnyhop")
-    log.info("Hop hop!")
+    log.info("Startup complete")
+    log.debug(f"log file at {log_path}")
+    log.debug(f"workspace gdb at {gdb_path}")
