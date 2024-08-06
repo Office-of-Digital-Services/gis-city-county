@@ -13,6 +13,7 @@ from . import config
 from . import retrieve
 
 import arcpy
+import arcgis
 import pandas
 
 
@@ -111,6 +112,28 @@ def process_census(local_census_table):
     return census_input_table
 
 
+class BOERetrieve():
+    """
+        Retrieve and process the BOE data layer. This works differently than the others. It's
+        already an ArcGIS Feature Service, and we need to do more work on it.
+    
+        Why is this a class when the others are just functions? Because it has more branches and more variables.
+        It could get cumbersome to pass all the data around, so we'll just use instance attributes instead.
+    """
+
+    def __init__(self, source_layer=config.BOE_LAYER_URL):
+        self.layer_url = source_layer
+
+    def retrieve_boe_layer():
+
+        portal = arcgis.GIS("https://arcgis.com")  # not really sure we need this
+        feature_layer = arcgis.features.FeatureLayer(config.BOE_LAYER_URL)
+        features = feature_layer.query()
+        features.save(arcpy.env.workspace, "boe_source_data")
+
+    def process_boe_layer()
+
+
 def flow(output_folder):
     
     # config flags for development
@@ -121,7 +144,6 @@ def flow(output_folder):
     if config.GET_CENSUS:
         census_data = retrieve.retrieve_census(output_folder=output_folder)
         census_processed = process_census(census_data)
-
 
 
     

@@ -12,13 +12,22 @@ from .logging_and_alerts import *
 
 import arcpy
 
+### BOE CONFIGS ###
+GET_BOE = True
+
+# BOE layer via https://gis.data.ca.gov/maps/93f73ae0070240fca9a4d3826ddb83cd/about
+BOE_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
+
+
+### GNIS CONFIGS ###
+
 GET_GNIS = False
 GNIS_URL = "https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/FederalCodes/FedCodes_CA_Text.zip"
 GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to extract from the zip file?
 
 ### CENSUS CONFIGS ###
 
-GET_CENSUS = True
+GET_CENSUS = False
 
 # we do an iterative check for the census data (described in the code itself), starting with the current year, then going back
 # to earlier years until we find a good one. What's the earliest year we should use? Set this to a year you know has good
