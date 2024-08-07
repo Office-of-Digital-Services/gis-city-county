@@ -9,6 +9,7 @@
 
 import logging
 import pathlib
+import os
 
 from . import config
 from . import retrieve
@@ -189,7 +190,7 @@ class BOERetrieve():
                                     join_table=str(self.boe_input_path),
                                     join_field="CITY",
                                     fields="COUNTY",
-                                    index_join_fields="NEW_INDEX"
+                                    index_join_fields="NEW_INDEXES"
         )
 
         arcpy.management.AddField(in_table=cities_dissolved,
@@ -235,7 +236,7 @@ class BOERetrieve():
             join_table=counties_copri_ids,
             join_field="COUNTY",
             fields="COPRI",
-            index_join_fields="NEW_INDEX"
+            index_join_fields="NEW_INDEXES"
         )
         
         arcpy.management.AddField(in_table=counties_working,
@@ -285,10 +286,14 @@ class BOERetrieve():
             index_join_fields="NEW_INDEXES"
         )
 
+        # import the DLA table to an ArcGIS table so we can use it in a join
+        dla_table_name = os.path.splitext(os.path.split(dla_table)[1])[0]
+        arcpy.TableToTable_conversion(dla_table, arcpy.env.workspace, dla_table_name)
+
         arcpy.management.JoinField(
             layer,
             in_field="Place_Name",
-            join_table=dla_table,
+            join_table=dla_table_name,
             join_field="PLACE_NAME",
             fields="PLACE_ABBR;CNTY_ABBR",
             index_join_fields="NEW_INDEXES"
