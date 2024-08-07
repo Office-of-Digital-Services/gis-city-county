@@ -19,6 +19,12 @@ GET_BOE = True
 BOE_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
 
 
+### DLA CONFIGS ###
+_current_folder = os.path.dirname(os.path.abspath(__file__))
+DLA_CITIES_TABLE = os.path.join(_current_folder, "data", "DLA_CityNames.xlsx")
+DLA_COUNTIES_TABLE = os.path.join(_current_folder, "data", "DLA_CountyNames.xlsx")
+
+
 ### GNIS CONFIGS ###
 
 GET_GNIS = False
