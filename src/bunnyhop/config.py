@@ -12,17 +12,29 @@ from .logging_and_alerts import *
 
 import arcpy
 
+_current_folder = os.path.dirname(os.path.abspath(__file__))
+
+### DEBUG CONFIG ###
+DEBUG = False  # uses local Census and FIPS data that's cached rather than retrieving it
+DEBUG_CENSUS_FILE = os.path.join(_current_folder, "data", "census_FIPS.csv")
+DEBUG_GNIS_FILE = os.path.join(_current_folder, "data", "gnis_raw_input_data.csv")
+
 ### BOE CONFIGS ###
 GET_BOE = True
 
 # BOE layer via https://gis.data.ca.gov/maps/93f73ae0070240fca9a4d3826ddb83cd/about
 BOE_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
 
+BOE_ADJUST = [
+    {
+        "where": {"PLACE_NAME": "San Francisco County"},
+        "field": {"COPRI": "38000"}
+    }
+]
 
 ### DLA CONFIGS ###
-_current_folder = os.path.dirname(os.path.abspath(__file__))
-DLA_CITIES_TABLE = os.path.join(_current_folder, "data", "DLA_CityNames.xlsx")
-DLA_COUNTIES_TABLE = os.path.join(_current_folder, "data", "DLA_CountyNames.xlsx")
+DLA_CITIES_TABLE = os.path.join(_current_folder, "data", "DLA_CityNames.xlsx", "CityNames$")
+DLA_COUNTIES_TABLE = os.path.join(_current_folder, "data", "DLA_CountyNames.xlsx", "CountyNames$")
 
 
 ### GNIS CONFIGS ###
@@ -41,6 +53,15 @@ GET_CENSUS = False
 CENSUS_EARLIEST_YEAR = 2023  # don't check any years earlier (e.g. 2022) than this. If 2023 fails for some reason, just STOP.
 CENSUS_FOLDER_URL = Template("https://www2.census.gov/programs-surveys/popest/geographies/$year/")
 CENSUS_FILE_URL = Template("https://www2.census.gov/programs-surveys/popest/geographies/$year/all-geocodes-v$year.xlsx")
+
+CENSUS_ADJUSTMENTS = {
+    # census field name
+    "Area_Name": {
+        "La Ca±ada Flintridge city": "La Cañada Flintridge city",
+        "El Paso de Robles (Paso Robles) city": "Paso Robles",
+        "San Buenaventura (Ventura) city": "Ventura city"
+    }
+}
 
 IN_ARCGIS_ONLINE_NOTEBOOKS = True if os.getcwd() == "/arcgis" else False  
 FOLDER_WORKSPACE: Optional[pathlib.PurePath] = None

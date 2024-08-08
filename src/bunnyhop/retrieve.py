@@ -118,6 +118,17 @@ def _check_for_year_census_file(year, filepath_on_success):
         if missing_count > 5: # we expect 1, but error out if there are more than a few in case we're missing some for new places.
             return False
 
+        # We need to drop this record because it will mess up the California City (in Kern County) data
+        california.drop(california[california["Area_Name"] == "California"].index, axis=0, inplace=True)  # drop the statewide census record so it doesn't muck anything up later -- goodness, that's a verbose bit of code
+
+        # make fixes to the census data based on items in the config file. Most are encoding errors or them having an old name
+        for field in config.CENSUS_ADJUSTMENTS:
+            # we have adjustment by column,
+            # then values we look for that need to be fixed
+            for adjustment_value in config.CENSUS_ADJUSTMENTS[field]:
+                # fill the dictionary value in where the column is currently equal to the dictionary key.
+                california.loc[california[field] == adjustment_value, field] = config.CENSUS_ADJUSTMENTS[field][adjustment_value]
+
         # if we're successful, write the filtered DF to the provided path and return True
         del california["has_data"] # we don't need that column - it was just a check
         california.reset_index(drop=True, inplace=True)
