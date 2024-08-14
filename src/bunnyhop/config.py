@@ -25,10 +25,17 @@ GET_BOE = True
 # BOE layer via https://gis.data.ca.gov/maps/93f73ae0070240fca9a4d3826ddb83cd/about
 BOE_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
 
+# These adjustments are more crude replacements, but they're because of challenges created in the
+# rest of the workflow that don't work well with coincident cities/counties (where they're one in the same boundary).
+# It's worth just patching these values in at the end.
 BOE_ADJUST = [
     {
         "where": {"PLACE_NAME": "San Francisco County"},
         "field": {"COPRI": "38000"}
+    },
+    {
+        "where": {"PLACE_NAME": "San Francisco County"},
+        "field": {"LEGAL_PLACE_NAME": "San Francisco County"}
     }
 ]
 
@@ -43,6 +50,20 @@ GET_GNIS = False
 GNIS_URL = "https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/FederalCodes/FedCodes_CA_Text.zip"
 GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to extract from the zip file?
 
+# These are processed at the *end* of the GNIS processing code since they make 
+# changes to the GNIS_JOIN_NAME field so that it can properly get merged
+# with the BOE data. They make one-off fixes to the join names for jurisdictions
+# whose names don't follow certain patterns or where BOE has abbreviations, etc.
+GNIS_ADJUSTMENTS = {
+    # census field name
+    "GNIS_JOIN_NAME": {
+        "El Paso de Robles": "Paso Robles",
+        "San Buenaventura": "Ventura",
+        "Saint Helena": "St. Helena",
+        "California City": "California"
+    }
+}
+
 ### CENSUS CONFIGS ###
 
 GET_CENSUS = False
@@ -54,12 +75,17 @@ CENSUS_EARLIEST_YEAR = 2023  # don't check any years earlier (e.g. 2022) than th
 CENSUS_FOLDER_URL = Template("https://www2.census.gov/programs-surveys/popest/geographies/$year/")
 CENSUS_FILE_URL = Template("https://www2.census.gov/programs-surveys/popest/geographies/$year/all-geocodes-v$year.xlsx")
 
+# these are processed at the end of retrieval of census data before the
+# data really begins being processed - they're effectively treated as errors
+# even though only one of them is. But they don't make it to customer-facing data
+# they just help it get joined in
 CENSUS_ADJUSTMENTS = {
     # census field name
     "Area_Name": {
         "La Ca±ada Flintridge city": "La Cañada Flintridge city",
-        "El Paso de Robles (Paso Robles) city": "Paso Robles",
-        "San Buenaventura (Ventura) city": "Ventura city"
+        "El Paso de Robles (Paso Robles) city": "Paso Robles city",
+        "San Buenaventura (Ventura) city": "Ventura city",
+        "California City city": "California city"
     }
 }
 

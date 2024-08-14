@@ -10,6 +10,7 @@
 import logging
 import pathlib
 import os
+import json
 
 from . import config
 from . import retrieve
@@ -19,8 +20,7 @@ import arcgis
 import pandas
 
 
-
-def process_gnis(local_gnis_table):
+def process_gnis(local_gnis_table, adjustments=config.GNIS_ADJUSTMENTS):
     # copy the GNIS table out of Excel in one shot - we'll get more predictable outputs
     # this way rather than trying to query/select an Excel table
     log = logging.getLogger("bunnyhop")
@@ -63,6 +63,32 @@ def split_name(classcode, name):
                                       expression_type="PYTHON3",
                                     )
     
+    log.debug("Postprocessing GNIS with hard-coded adjustments")
+    
+    # ok, so this if funky. We have a dictionary of adjustments we want to use to make one-off changes to fields.
+    # but we need to get that dictionary into ArcGIS's Python *as text* and then into a usable Python object.
+    # so we'll dump it to json, embed that into a string, and then when ArcGIS executes
+    # that Python, it'll have the dictionary representation.
+    for field_name in adjustments:
+        adjustments_json = json.dumps(adjustments[field_name])  # dump the set of adjustments for this field to json
+        adjustments_code_block = f"import json;replacement_dict = json.loads('{adjustments_json}')"  # make a string that, when executed as python, would load that data back into a dict
+        # then add that at the beginning of the code block
+        replacement_code_block = adjustments_code_block + """
+
+def replace_values(field_value):
+    if field_value in replacement_dict:
+        return replacement_dict[field_value]
+    else:
+        return field_value
+"""
+
+        # now run the value replacement for this field
+        arcpy.management.CalculateField(gnis_filtered_table,
+                                        field_name,
+                                        expression=f"replace_values(!{field_name}!)",
+                                        expression_type="PYTHON3",
+                                        code_block=replacement_code_block)
+
     log.info("GNIS processing complete")
     return gnis_filtered_table
 
@@ -131,9 +157,10 @@ class BOERetrieve():
         It could get cumbersome to pass all the data around, so we'll just use instance attributes instead.
     """
 
-    def __init__(self, source_layer=config.BOE_LAYER_URL):
+    def __init__(self, source_layer=config.BOE_LAYER_URL, adjustments=config.BOE_ADJUST):
         self.layer_url = source_layer
         self.log = logging.getLogger("bunnyhop")
+        self.adjustments=adjustments
 
         self.boe_input_path = None
 
@@ -220,7 +247,7 @@ class BOERetrieve():
         arcpy.management.CalculateField(cities_dissolved,
                                         "PLACE_NAME",
                                         "!CITY!")
-        
+
         self.cities_output_path = cities_dissolved
 
     def counties_pathway(self):
@@ -283,7 +310,7 @@ class BOERetrieve():
         """
         self.log.debug("Merging DLA Tables")
         arcpy.Merge_management([self.dla_cities_table, self.dla_counties_table], "dla_merged")
-
+        
         self._join_individual(self.cities_output_path, dla_table="dla_merged")
         self._join_individual(self.counties_output_path, dla_table="dla_merged")
 
@@ -328,6 +355,8 @@ class BOERetrieve():
             index_join_fields="NEW_INDEXES"
         )
 
+        # we need to run this after the joins because it can fix values that are joined in
+        self.fix_individual_values(layer)
 
     def merge(self):
         merged_layer = "cities_counties_merged"
@@ -335,6 +364,30 @@ class BOERetrieve():
 
         self.merged_output_path = merged_layer
 
+    def fix_individual_values(self, layer):
+        """
+            Kind of a silly method (really geared toward a data frame), where we use Calculate Field to fix individual values
+        """
+
+        fix_individual_value_code_block = """
+def fix_individual(conditional_field_value, conditional_check_value, update_value, current_value):
+    if conditional_field_value == conditional_check_value:
+        return update_value
+    else:
+        return current_value
+
+"""
+
+        for adjust in self.adjustments:
+            update_field = list(adjust["field"].keys())[0]
+            check_field = list(adjust["where"].keys())[0]
+            check_value = adjust["where"][check_field]
+            update_value = adjust["field"][update_field]
+            arcpy.management.CalculateField(layer,
+                                            field=update_field,
+                                            expression=f'fix_individual(!{check_field}!, "{check_value}", "{update_value}", !{update_field}!)',
+                                            expression_type="PYTHON3",
+                                            code_block=fix_individual_value_code_block)
 
 
 def flow(output_folder):

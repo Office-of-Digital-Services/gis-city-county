@@ -121,7 +121,7 @@ def _check_for_year_census_file(year, filepath_on_success):
         # We need to drop this record because it will mess up the California City (in Kern County) data
         california.drop(california[california["Area_Name"] == "California"].index, axis=0, inplace=True)  # drop the statewide census record so it doesn't muck anything up later -- goodness, that's a verbose bit of code
 
-        # make fixes to the census data based on items in the config file. Most are encoding errors or them having an old name
+        # make fixes to the census data based on items in the config file. Most are encoding errors or them having an old name()
         for field in config.CENSUS_ADJUSTMENTS:
             # we have adjustment by column,
             # then values we look for that need to be fixed
