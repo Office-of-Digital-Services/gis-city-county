@@ -7,7 +7,6 @@ import logging
 from logging.config import dictConfig
 from string import Template
 
-from .config_github import *
 from .logging_and_alerts import *
 
 import arcpy
@@ -18,6 +17,14 @@ _current_folder = os.path.dirname(os.path.abspath(__file__))
 DEBUG = False  # uses local Census and FIPS data that's cached rather than retrieving it
 DEBUG_CENSUS_FILE = os.path.join(_current_folder, "data", "census_FIPS.csv")
 DEBUG_GNIS_FILE = os.path.join(_current_folder, "data", "gnis_raw_input_data.csv")
+
+FILE_GITHUB_ISSUES = False
+
+# Set REPROJECT_TO to None to disable reprojection
+REPROJECT_TO = arcpy.SpatialReference(3310)
+CALCULATE_AREA_IN_CRS = arcpy.SpatialReference(3310)
+CALCULATE_AREA_UNITS_USER = "SqMi"  # for the field name
+CALCULATE_AREA_UNITS = "SQUARE_MILES_INT"  # provided to ArcGIS - we can calculate in Miles even in a CRS that is in meters. The important point is that the CRS is equal area.
 
 ### BOE CONFIGS ###
 GET_BOE = True
@@ -46,7 +53,7 @@ DLA_COUNTIES_TABLE = os.path.join(_current_folder, "data", "DLA_CountyNames.xlsx
 
 ### GNIS CONFIGS ###
 
-GET_GNIS = False
+GET_GNIS = True
 GNIS_URL = "https://prd-tnm.s3.amazonaws.com/StagedProducts/GeographicNames/FederalCodes/FedCodes_CA_Text.zip"
 GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to extract from the zip file?
 

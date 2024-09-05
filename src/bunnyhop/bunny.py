@@ -157,7 +157,13 @@ class BOERetrieve():
         It could get cumbersome to pass all the data around, so we'll just use instance attributes instead.
     """
 
-    def __init__(self, source_layer=config.BOE_LAYER_URL, adjustments=config.BOE_ADJUST):
+    def __init__(self,
+                  source_layer=config.BOE_LAYER_URL,
+                  adjustments=config.BOE_ADJUST,
+                  reproject_to=config.REPROJECT_TO,
+                  calculate_area_in_crs=config.CALCULATE_AREA_IN_CRS,
+                  calculate_area_units_user=config.CALCULATE_AREA_UNITS_USER,
+                  calculate_area_units=config.CALCULATE_AREA_UNITS):
         self.layer_url = source_layer
         self.log = logging.getLogger("bunnyhop")
         self.adjustments=adjustments
@@ -173,6 +179,11 @@ class BOERetrieve():
         self.dla_cities_table=None
         self.dla_counties_table=None
 
+        self.reproject_to=reproject_to
+        self.calculate_area_in_crs=calculate_area_in_crs
+        self.calculate_area_units_user = calculate_area_units_user
+        self.calculate_area_units=calculate_area_units
+
     def retrieve_and_process(self, census_table, gnis_table, dla_cities_table, dla_counties_table):
         self.census_table = census_table
         self.gnis_table = gnis_table
@@ -183,6 +194,7 @@ class BOERetrieve():
         self.retrieve_boe_layer()
         self.process_boe_layer()
         self.run_joins()
+        self.add_fields_and_reproject_both()
         self.merge()
 
     def retrieve_boe_layer(self):
@@ -314,6 +326,23 @@ class BOERetrieve():
         self._join_individual(self.cities_output_path, dla_table="dla_merged")
         self._join_individual(self.counties_output_path, dla_table="dla_merged")
 
+    def add_fields_and_reproject_both(self):
+        """
+            Just controls reprojecting both the cities and counties layers and setting the new output paths,
+            then adding and calculating the area field onto each one. Meant to be used in the main pipeline.
+        """
+
+        # note, we're adding the area fields before reprojecting because that way the area field is
+        # before the Shape_Length and Shape_Area fields that GIS practitioners commonly associate with being
+        # the end of the attributes. This is safe because we explicitly pass the CRS we want to calculate the
+        # area in while calculating the area, so we know it's in an equal area projection even if the dataset
+        # isn't currently in an equal area projection itself.
+        self.add_and_calculate_area_field(self.cities_output_path)
+        self.add_and_calculate_area_field(self.counties_output_path)
+
+        self.cities_output_path = self.reproject(self.cities_output_path)
+        self.counties_output_path = self.reproject(self.counties_output_path)
+
     def _join_individual(self, layer, dla_table):
         """
         We do three joins of external data - this will join all three to the appropriate layer
@@ -363,6 +392,39 @@ class BOERetrieve():
         arcpy.management.Merge([self.counties_output_path, self.cities_output_path], merged_layer)
 
         self.merged_output_path = merged_layer
+
+    def reproject(self, features):
+        """
+            Reprojects the provided data into the CRS provided in the config
+
+        Args:
+            features (_type_): on disk features, likely in the current workspace
+
+        Returns:
+            _type_: provided input if self.reproject_to is None, otherwise, the name of a new set of features in the current workspace with the CRS ID (EPSG code) appended to the name
+        """
+        if self.reproject_to is not None:
+            projection_code = self.reproject_to.factoryCode
+
+            base_name = os.path.split(features)[1]
+            new_name = f"{base_name}_{str(projection_code)}"
+            
+            # we may want to provide an ability to specify the transformation for
+            # the reprojection, but I don't think that's necessary now.
+            arcpy.management.Project(in_dataset=features,
+                                     out_dataset=new_name,
+                                     out_coor_system=self.reproject_to)
+            return new_name
+        else:
+            return features
+
+    def add_and_calculate_area_field(self, features):
+        area_field = f"AREA_{self.calculate_area_units_user}"
+        
+        arcpy.management.CalculateGeometryAttributes(in_features=features,
+                                                      geometry_property=[[area_field, "AREA"]],
+                                                      area_unit=self.calculate_area_units,
+                                                      coordinate_system=self.calculate_area_in_crs)
 
     def fix_individual_values(self, layer):
         """
