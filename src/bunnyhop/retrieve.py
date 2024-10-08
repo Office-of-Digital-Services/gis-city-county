@@ -10,9 +10,6 @@ import requests
 import pandas
 
 
-class BOERetrieve():
-    pass
-
 
 def retrieve_gnis(source=config.GNIS_URL, output_folder: Optional[pathlib.PurePath]=None) -> pandas.DataFrame:
     """Retrieves, decompresses, and loads the GNIS data into a pandas data frame, which it retuns to the callers

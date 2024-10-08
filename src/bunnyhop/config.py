@@ -26,16 +26,16 @@ CALCULATE_AREA_IN_CRS = arcpy.SpatialReference(3310)
 CALCULATE_AREA_UNITS_USER = "SqMi"  # for the field name
 CALCULATE_AREA_UNITS = "SQUARE_MILES_INT"  # provided to ArcGIS - we can calculate in Miles even in a CRS that is in meters. The important point is that the CRS is equal area.
 
-### BOE CONFIGS ###
-GET_BOE = True
+### CDTFA CONFIGS ###
+GET_CDTFA = True
 
-# BOE layer via https://gis.data.ca.gov/maps/93f73ae0070240fca9a4d3826ddb83cd/about
-BOE_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
+# CDTFA layer via https://gis.data.ca.gov/maps/93f73ae0070240fca9a4d3826ddb83cd/about
+CDTFA_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
 
 # These adjustments are more crude replacements, but they're because of challenges created in the
 # rest of the workflow that don't work well with coincident cities/counties (where they're one in the same boundary).
 # It's worth just patching these values in at the end.
-BOE_ADJUST = [
+CDTFA_ADJUST = [
     {
         "where": {"PLACE_NAME": "San Francisco County"},
         "field": {"COPRI": "38000"}
@@ -47,9 +47,7 @@ BOE_ADJUST = [
 ]
 
 ### DLA CONFIGS ###
-DLA_CITIES_TABLE = os.path.join(_current_folder, "data", "DLA_CityNames.xlsx", "CityNames$")
-DLA_COUNTIES_TABLE = os.path.join(_current_folder, "data", "DLA_CountyNames.xlsx", "CountyNames$")
-
+DLA_SOURCE_TABLE_URL = "https://services3.arcgis.com/uknczv4rpevve42E/arcgis/rest/services/Place_Abbreviations/FeatureServer/15"
 
 ### GNIS CONFIGS ###
 
@@ -59,8 +57,8 @@ GNIS_ZIP_FILE_PATH = "Text/FederalCodes_CA.txt"  # where is the file we want to 
 
 # These are processed at the *end* of the GNIS processing code since they make 
 # changes to the GNIS_JOIN_NAME field so that it can properly get merged
-# with the BOE data. They make one-off fixes to the join names for jurisdictions
-# whose names don't follow certain patterns or where BOE has abbreviations, etc.
+# with the CDTFA data. They make one-off fixes to the join names for jurisdictions
+# whose names don't follow certain patterns or where CDTFA has abbreviations, etc.
 GNIS_ADJUSTMENTS = {
     # census field name
     "GNIS_JOIN_NAME": {

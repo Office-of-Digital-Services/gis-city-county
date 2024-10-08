@@ -1,6 +1,6 @@
 # BunnyHop
 BunnyHop is ETL code for:
-1. Retrieving authoritative city/county boundaries from BOE,
+1. Retrieving authoritative city/county boundaries from CDTFA,
 2. Processing them using Python/ArcGIS to change the spatial data structure and add attributes for CalTrans
 3. Publishing the results to ArcGIS Online
 

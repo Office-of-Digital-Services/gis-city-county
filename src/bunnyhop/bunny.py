@@ -1,7 +1,7 @@
 """
     This file will do the bulk of the interesting work of conflating boundaries, normaling terms, and joining data
     Let's plan to break it up into a similar set of branches to how Liana initially designed it. Roughly
-    that translates to branches for processing the BOE data itself,
+    that translates to branches for processing the CDTFA data itself,
     TIGER transformations
     GNIS transformations
     and CalTrans data transformation
@@ -36,6 +36,7 @@ def process_gnis(local_gnis_table, adjustments=config.GNIS_ADJUSTMENTS):
 
     log.debug("Adding LEGAL_PLACE_NAME field")
     arcpy.management.AddField(in_table=gnis_filtered_table, field_name="LEGAL_PLACE_NAME", field_type="Text", field_is_nullable=True)
+    arcpy.management.AddField(in_table=gnis_filtered_table, field_name="GNIS_ID", field_type="LONG", field_is_nullable=True)
     arcpy.management.AddField(in_table=gnis_filtered_table, field_name="GNIS_JOIN_NAME", field_type="Text", field_is_nullable=True)
 
     calc_field_code_block = """
@@ -60,6 +61,13 @@ def split_name(classcode, name):
     arcpy.management.CalculateField(in_table=gnis_filtered_table,
                                       field="LEGAL_PLACE_NAME",
                                       expression="!feature_name!",
+                                      expression_type="PYTHON3",
+                                    )
+    
+    log.debug("Filling in GNIS_ID field")
+    arcpy.management.CalculateField(in_table=gnis_filtered_table,
+                                      field="GNIS_ID",
+                                      expression="!feature_id!",
                                       expression_type="PYTHON3",
                                     )
     
@@ -148,9 +156,9 @@ def process_census(local_census_table):
     return census_input_table
 
 
-class BOERetrieve():
+class CDTFARetrieve():
     """
-        Retrieve and process the BOE data layer. This works differently than the others. It's
+        Retrieve and process the CDTFA data layer. This works differently than the others. It's
         already an ArcGIS Feature Service, and we need to do more work on it.
     
         Why is this a class when the others are just functions? Because it has more branches and more variables.
@@ -158,8 +166,8 @@ class BOERetrieve():
     """
 
     def __init__(self,
-                  source_layer=config.BOE_LAYER_URL,
-                  adjustments=config.BOE_ADJUST,
+                  source_layer=config.CDTFA_LAYER_URL,
+                  adjustments=config.CDTFA_ADJUST,
                   reproject_to=config.REPROJECT_TO,
                   calculate_area_in_crs=config.CALCULATE_AREA_IN_CRS,
                   calculate_area_units_user=config.CALCULATE_AREA_UNITS_USER,
@@ -168,51 +176,49 @@ class BOERetrieve():
         self.log = logging.getLogger("bunnyhop")
         self.adjustments=adjustments
 
-        self.boe_input_path = None
+        self.cdtfa_input_path = None
 
         self.cities_output_path = None
         self.counties_output_path = None
         self.merged_output_path = None
 
         self.census_table = None
-        self.gnis_table=None
-        self.dla_cities_table=None
-        self.dla_counties_table=None
+        self.gnis_table = None
+        self.dla_source_table = None
 
         self.reproject_to=reproject_to
         self.calculate_area_in_crs=calculate_area_in_crs
         self.calculate_area_units_user = calculate_area_units_user
         self.calculate_area_units=calculate_area_units
 
-    def retrieve_and_process(self, census_table, gnis_table, dla_cities_table, dla_counties_table):
+    def retrieve_and_process(self, census_table, gnis_table, dla_source_table):
         self.census_table = census_table
         self.gnis_table = gnis_table
-        self.dla_cities_table = dla_cities_table
-        self.dla_counties_table = dla_counties_table
+        self.dla_source_table = dla_source_table
 
-        self.log.info("Beginning BOE Layer processing")
-        self.retrieve_boe_layer()
-        self.process_boe_layer()
+        self.log.info("Beginning CDTFA Layer processing")
+        self.retrieve_cdtfa_layer()
+        self.process_cdtfa_layer()
         self.run_joins()
         self.add_fields_and_reproject_both()
         self.merge()
 
-    def retrieve_boe_layer(self):
-        self.log.debug("Retrieving BOE Layer")
+    def retrieve_cdtfa_layer(self):
+        self.log.debug("Retrieving CDTFA Layer")
         portal = arcgis.GIS("https://arcgis.com")  # not really sure we need this
-        feature_layer = arcgis.features.FeatureLayer(config.BOE_LAYER_URL)
+        feature_layer = arcgis.features.FeatureLayer(self.layer_url)
         features = feature_layer.query()
-        features.save(arcpy.env.workspace, "boe_source_data")
+        features.save(arcpy.env.workspace, "cdtfa_source_data")
 
-        self.log.debug("BOE Layer Retrieved")
-        self.boe_input_path = pathlib.PurePath(arcpy.env.workspace) / "boe_source_data"
+        self.log.debug("CDTFA Layer Retrieved")
+        self.cdtfa_input_path = pathlib.PurePath(arcpy.env.workspace) / "cdtfa_source_data"
 
-    def process_boe_layer(self, repair_geometry_first=True):
+    def process_cdtfa_layer(self, repair_geometry_first=True):
         
         # in many situations, we want to start by repairing the geometry - some of the rings may be broken
         if repair_geometry_first:
             # operates in place, so we can keep the same path
-            arcpy.management.RepairGeometry(str(self.boe_input_path), delete_null=False)
+            arcpy.management.RepairGeometry(str(self.cdtfa_input_path), delete_null=False)
 
         self.cities_pathway()
         self.counties_pathway()
@@ -225,7 +231,7 @@ class BOERetrieve():
         self.log.info("Beginning processing cities")
         self.log.debug("Selecting out cities")
         cities_working = "cities_working"
-        arcpy.analysis.Select(in_features=str(self.boe_input_path),
+        arcpy.analysis.Select(in_features=str(self.cdtfa_input_path),
                                 out_feature_class=cities_working,
                                 where_clause="CITY <> 'Unincorporated'"
         )
@@ -242,7 +248,7 @@ class BOERetrieve():
         self.log.debug("Attaching county name to cities")
         arcpy.management.JoinField(cities_dissolved,
                                     in_field="CITY",
-                                    join_table=str(self.boe_input_path),
+                                    join_table=str(self.cdtfa_input_path),
                                     join_field="CITY",
                                     fields="COUNTY",
                                     index_join_fields="NEW_INDEXES"
@@ -273,7 +279,7 @@ class BOERetrieve():
 
         self.log.debug("Selecting out counties")
         counties_copri_working = "counties_copri_working"
-        arcpy.analysis.Select(in_features=str(self.boe_input_path),
+        arcpy.analysis.Select(in_features=str(self.cdtfa_input_path),
                                 out_feature_class=counties_copri_working,
                                 where_clause="CITY = 'Unincorporated'"
                             )
@@ -287,7 +293,7 @@ class BOERetrieve():
         
         self.log.debug("Dissolving counties to get full boundary")
         counties_working = "counties_working"
-        arcpy.management.Dissolve(in_features=str(self.boe_input_path),
+        arcpy.management.Dissolve(in_features=str(self.cdtfa_input_path),
                                     out_feature_class=counties_working,
                                     dissolve_field="COUNTY"
                                 )
@@ -320,11 +326,14 @@ class BOERetrieve():
         """
             Joins the data to both the cities and counties layers
         """
-        self.log.debug("Merging DLA Tables")
-        arcpy.Merge_management([self.dla_cities_table, self.dla_counties_table], "dla_merged")
-        
-        self._join_individual(self.cities_output_path, dla_table="dla_merged")
-        self._join_individual(self.counties_output_path, dla_table="dla_merged")
+        #self.log.debug("Merging DLA Tables")
+        #arcpy.Merge_management([self.dla_cities_table, self.dla_counties_table], "dla_merged")
+        self.log.debug("Downloading DLA Table")
+        arcpy.CopyRows_management(self.dla_source_table, "dla_source_data")
+
+        self.log.debug("Joining Tables")
+        self._join_individual(self.cities_output_path, dla_table="dla_source_data")
+        self._join_individual(self.counties_output_path, dla_table="dla_source_data")
 
     def add_fields_and_reproject_both(self):
         """
@@ -341,9 +350,9 @@ class BOERetrieve():
         self.add_and_calculate_area_field(self.counties_output_path)
 
         self.cities_output_path = self.reproject(self.cities_output_path)
-        self.counties_output_path = self.reproject(self.counties_output_path)
+        self.counties_output_path = self.reproject(self.counties_output_path, counties=True)
 
-    def _join_individual(self, layer, dla_table):
+    def _join_individual(self, layer, dla_table, counties=False):
         """
         We do three joins of external data - this will join all three to the appropriate layer
         based on the matching fields. We could merge the data once beforehand then join these once
@@ -367,20 +376,21 @@ class BOERetrieve():
             in_field="PLACE_NAME",
             join_table=self.gnis_table,
             join_field="GNIS_JOIN_NAME",
-            fields="LEGAL_PLACE_NAME",
+            fields="LEGAL_PLACE_NAME;GNIS_ID",
             index_join_fields="NEW_INDEXES"
         )
 
-        # import the DLA table to an ArcGIS table so we can use it in a join
-        #dla_table_name = os.path.splitext(os.path.split(dla_table)[1])[0]
-        #arcpy.CopyRows_management(dla_table, dla_table_name)
-
+        if counties:
+            fields = "CNTY_ABBR"
+        else:
+            fields = "PLACE_ABBR;CNTY_ABBR"
+            
         arcpy.management.JoinField(
             layer,
             in_field="Place_Name",
             join_table=dla_table,
             join_field="PLACE_NAME",
-            fields="PLACE_ABBR;CNTY_ABBR",
+            fields=fields,
             index_join_fields="NEW_INDEXES"
         )
 
@@ -456,7 +466,7 @@ def flow(output_folder):
     log = logging.getLogger("bunnyhop")
     
     # config flags for development
-    if config.GET_GNIS or config.GET_BOE:
+    if config.GET_GNIS or config.GET_CDTFA:
         if not config.DEBUG:
             gnis_file_data: pandas.DataFrame = retrieve.retrieve_gnis(output_folder=output_folder)
         else:
@@ -465,7 +475,7 @@ def flow(output_folder):
 
         gnis_processed = process_gnis(str(gnis_file_data['csv']))
     
-    if config.GET_CENSUS or config.GET_BOE:
+    if config.GET_CENSUS or config.GET_CDTFA:
         if not config.DEBUG:
             census_data = retrieve.retrieve_census(output_folder=output_folder)
         else:
@@ -473,12 +483,11 @@ def flow(output_folder):
             census_data = config.DEBUG_CENSUS_FILE
         census_processed = process_census(census_data)
 
-    if config.GET_BOE:
-        boe_runner = BOERetrieve()
-        boe_runner.retrieve_and_process(census_table=census_processed,
+    if config.GET_CDTFA:
+        cdtfa_runner = CDTFARetrieve()
+        cdtfa_runner.retrieve_and_process(census_table=census_processed,
                                         gnis_table=gnis_processed,
-                                        dla_cities_table=config.DLA_CITIES_TABLE,
-                                        dla_counties_table=config.DLA_COUNTIES_TABLE
+                                        dla_source_table=config.DLA_SOURCE_TABLE_URL
                                         )
 
-        log.info(f"Finished. See merged output at {os.path.join(arcpy.env.workspace, boe_runner.merged_output_path)}")
+        log.info(f"Finished. See merged output at {os.path.join(arcpy.env.workspace, cdtfa_runner.merged_output_path)}")
