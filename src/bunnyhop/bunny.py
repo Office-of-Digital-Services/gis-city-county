@@ -333,7 +333,7 @@ class CDTFARetrieve():
 
         self.log.debug("Joining Tables")
         self._join_individual(self.cities_output_path, dla_table="dla_source_data")
-        self._join_individual(self.counties_output_path, dla_table="dla_source_data")
+        self._join_individual(self.counties_output_path, dla_table="dla_source_data", counties=True)
 
     def add_fields_and_reproject_both(self):
         """
@@ -350,7 +350,7 @@ class CDTFARetrieve():
         self.add_and_calculate_area_field(self.counties_output_path)
 
         self.cities_output_path = self.reproject(self.cities_output_path)
-        self.counties_output_path = self.reproject(self.counties_output_path, counties=True)
+        self.counties_output_path = self.reproject(self.counties_output_path)
 
     def _join_individual(self, layer, dla_table, counties=False):
         """
@@ -384,7 +384,7 @@ class CDTFARetrieve():
             fields = "CNTY_ABBR"
         else:
             fields = "PLACE_ABBR;CNTY_ABBR"
-            
+
         arcpy.management.JoinField(
             layer,
             in_field="Place_Name",
