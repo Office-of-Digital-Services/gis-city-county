@@ -333,7 +333,7 @@ class CDTFARetrieve():
 
         self.log.debug("Joining Tables")
         self._join_individual(self.cities_output_path, dla_table="dla_source_data")
-        self._join_individual(self.counties_output_path, dla_table="dla_source_data", counties=True)
+        self._join_individual(self.counties_output_path, dla_table="dla_source_data")
 
     def add_fields_and_reproject_both(self):
         """
@@ -380,17 +380,12 @@ class CDTFARetrieve():
             index_join_fields="NEW_INDEXES"
         )
 
-        if counties:
-            fields = "CNTY_ABBR"
-        else:
-            fields = "PLACE_ABBR;CNTY_ABBR"
-
         arcpy.management.JoinField(
             layer,
             in_field="Place_Name",
             join_table=dla_table,
             join_field="PLACE_NAME",
-            fields=fields,
+            fields="PLACE_ABBR;CNTY_ABBR",
             index_join_fields="NEW_INDEXES"
         )
 
