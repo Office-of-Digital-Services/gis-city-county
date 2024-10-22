@@ -3,9 +3,9 @@ __version__ = "2024.07.30"
 import os
 import sys
 
-from . import bunny, config, publish, quality_check, retrieve
+from . import bunny, config, publish, quality_check, retrieve, coastline
 
-__all__ = ["bunny", "config", "publish", "quality_check", "retrieve"]
+__all__ = ["bunny", "config", "publish", "quality_check", "retrieve", "coastline"]
 
 def locked_down_path_fix():
     """

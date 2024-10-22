@@ -26,6 +26,23 @@ CALCULATE_AREA_IN_CRS = arcpy.SpatialReference(3310)
 CALCULATE_AREA_UNITS_USER = "SqMi"  # for the field name
 CALCULATE_AREA_UNITS = "SQUARE_MILES_INT"  # provided to ArcGIS - we can calculate in Miles even in a CRS that is in meters. The important point is that the CRS is equal area.
 
+### COASTLINE CONFIGS ###
+COASTLINE_LAYER_URL: str = "https://services3.arcgis.com/uknczv4rpevve42E/arcgis/rest/services/California_Cartographic_Coastal_Polygons/FeatureServer/19"
+COASTLINE_EXCLUSION_FIELD: str = "coastal"
+COASTLINE_COUNTIES_EXCLUDE: tuple = ("ocean",)
+COASTLINE_CITIES_EXCLUDE: tuple = ("ocean", "bay")
+
+COASTLINE_CHECK_SIZE_THRESHOLD_METERS= 100000
+COASTLINE_CHECK_SR = arcpy.SpatialReference(3857)
+initial_sr = arcpy.SpatialReference(3310)
+COASTLINE_KEEP_FRAGMENTS_IN_GEOMS = [  # these will be compared against fragments - if a fragment is in here, it'll be kept regardless of size
+    arcpy.Polygon(arcpy.Array([arcpy.Point(-281052, -16085), arcpy.Point(-257873, -16085), arcpy.Point(-257873,-38503), arcpy.Point(-281052,-38503), arcpy.Point(-281052, -16085)]), spatial_reference=initial_sr).projectAs(COASTLINE_CHECK_SR),  # farallons
+    arcpy.PointGeometry(arcpy.Point(-212926, -18383), spatial_reference=initial_sr).projectAs(COASTLINE_CHECK_SR), # alcatraz
+    arcpy.Polygon(arcpy.Array([arcpy.Point(-212938, -14187), arcpy.Point(-211711, -14187), arcpy.Point(-211711, -15762), arcpy.Point(-212938, -15762), arcpy.Point(-212938, -14187)]), spatial_reference=initial_sr).projectAs(COASTLINE_CHECK_SR) # angel island parts
+]
+
+COASTLINE_SLIVER_FIX = True  # should we actually run the sliver fix?
+
 ### CDTFA CONFIGS ###
 GET_CDTFA = True
 

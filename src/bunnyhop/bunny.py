@@ -14,6 +14,7 @@ import json
 
 from . import config
 from . import retrieve
+from . import coastline
 
 import arcpy
 import arcgis
@@ -340,6 +341,14 @@ class CDTFARetrieve():
             Just controls reprojecting both the cities and counties layers and setting the new output paths,
             then adding and calculating the area field onto each one. Meant to be used in the main pipeline.
         """
+
+        self.log.info("Performing Coastline Cut")
+        cities_output = "cities_final"
+        counties_output = "counties_final"
+        coastline.coastal_cut(self.cities_output_path, cities_output, "cities", log=self.log)
+        coastline.coastal_cut(self.counties_output_path, counties_output, "counties", log=self.log)
+        self.cities_output_path = cities_output
+        self.counties_output_path = counties_output
 
         # note, we're adding the area fields before reprojecting because that way the area field is
         # before the Shape_Length and Shape_Area fields that GIS practitioners commonly associate with being
