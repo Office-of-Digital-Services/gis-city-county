@@ -76,10 +76,29 @@ def fix_slivers(input, keep_fragment_geoms=config.COASTLINE_KEEP_FRAGMENTS_IN_GE
             
             place1 = polys_by_name[place][0]
             place2 = polys_by_name[place][1]
-
+            
+            # check 1 against 2 in both directions
             place1, place2 = check_parts(place1, place2, keep_fragment_geoms, threshold)
             place1, place2 = check_parts(place2, place1, keep_fragment_geoms, threshold)
+            
+            # as of this writing, everything but SF is covered by the above, which will be 3 places in the city version.
+            # This code is clearer than a general case though, so leaving it and adding coverage of the rest below
 
+            # if we have two separate coastal buffer multipolygons (e.g. one for bay, one for ocean), then do the pairwise comparisons on all of them
+            if len(polys_by_name[place]) == 3: 
+                place3 = polys_by_name[place][2]
+                
+                # check 1 against 3 in both directions
+                place1, place3 = check_parts(place1, place3, keep_fragment_geoms, threshold)
+                place3, place1 = check_parts(place3, place1, keep_fragment_geoms, threshold)
+
+                # check 2 against 3 in both directions
+                place2, place3 = check_parts(place2, place3, keep_fragment_geoms, threshold)
+                place3, place2 = check_parts(place3, place2, keep_fragment_geoms, threshold)
+                
+                polys_by_name[place][2] = place3
+
+            # set these at the end because the "if" block could modify them
             polys_by_name[place][0] = place1
             polys_by_name[place][1] = place2
 
@@ -102,7 +121,7 @@ def check_parts(place1, place2, keep_fragment_geoms, threshold, sr=config.COASTL
     swaps = []
     for part_id in range(place1_parts):
         part_array = place1[0].getPart(part_id)  # index 0 is the geometry
-        part = arcpy.Polygon(part_array, spatial_reference=sr)
+        part = arcpy.Polygon(inputs=part_array, spatial_reference=sr)
 
         if part.area < threshold:
             skip = False  # check if it's a fragment we need to keep
