@@ -48,11 +48,19 @@ def coastal_cut(input_data,
 
     # run a union to the output path
     log.debug("Running coastline union")
-    arcpy.analysis.Union([input_data, coastal_layer_name], output_name)
+    prelim_name = f"{output_name}_preliminary"
+    arcpy.analysis.Union([input_data, coastal_layer_name], prelim_name)
 
     if run_sliver_fix:
         log.debug("Fixing coastal slivers")
-        fix_slivers(output_name)
+        fix_slivers(prelim_name)
+    
+    # delete the attached FID fields from the Union - we don't want them in the schema
+    remove_fields = [field.name for field in arcpy.ListFields(prelim_name, "FID_*")]
+    arcpy.management.DeleteField(prelim_name, remove_fields)
+
+    # remove the coastal polygon from the union.
+    arcpy.analysis.Select(prelim_name, output_name, "LEGAL_PLACE_NAME <> '' and PLACE_TYPE <> '' and PLACE_NAME <> ''")  # remove the large off-coast polygon. 
 
 def fix_slivers(input, keep_fragment_geoms=config.COASTLINE_KEEP_FRAGMENTS_IN_GEOMS, threshold=config.COASTLINE_CHECK_SIZE_THRESHOLD_METERS):
     

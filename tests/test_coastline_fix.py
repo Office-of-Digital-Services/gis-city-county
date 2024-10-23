@@ -15,12 +15,12 @@ WORKSPACE = r"C:\Users\nick.santos\AppData\Local\Temp\bunnyhop_workspace1om6mijr
 
 def test_coastline_fixes(counties_source_data=COUNTIES_SOURCE_DATA, cities_source_data=CITIES_SOURCE_DATA, workspace=WORKSPACE):
     with arcpy.EnvManager(workspace=workspace, overwriteOutput=True):
-        #coastline.coastal_cut(input_data=counties_source_data,
-        #                      output_name="testing_coastal_cut_counties",
-        #                      cities_counties="counties",
-        #                      log=log,
-        #                      run_sliver_fix=True
-        #                      )
+        coastline.coastal_cut(input_data=counties_source_data,
+                              output_name="testing_coastal_cut_counties",
+                              cities_counties="counties",
+                              log=log,
+                              run_sliver_fix=True
+                              )
     
         coastline.coastal_cut(input_data=cities_source_data,
                               output_name="testing_coastal_cut_cities",
