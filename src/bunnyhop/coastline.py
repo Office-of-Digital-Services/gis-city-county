@@ -59,8 +59,11 @@ def coastal_cut(input_data,
     remove_fields = [field.name for field in arcpy.ListFields(prelim_name, "FID_*")]
     arcpy.management.DeleteField(prelim_name, remove_fields)
 
-    # remove the coastal polygon from the union.
-    arcpy.analysis.Select(prelim_name, output_name, "LEGAL_PLACE_NAME <> '' and PLACE_TYPE <> '' and PLACE_NAME <> ''")  # remove the large off-coast polygon. 
+    # remove the coastal polygon from the union and remove coastal buffers when all of their geometry has been moved back to the city.
+    arcpy.analysis.Select(prelim_name, output_name, "(LEGAL_PLACE_NAME <> '' and PLACE_TYPE <> '' and PLACE_NAME <> '') and Shape_Area > 1")  # remove the large off-coast polygon. 
+
+    # set COASTAL to NULL when it's blank so it's more normal.
+    arcpy.management.CalculateField(output_name, "COASTAL", "None if !COASTAL! == '' else !COASTAL!")
 
 def fix_slivers(input, keep_fragment_geoms=config.COASTLINE_KEEP_FRAGMENTS_IN_GEOMS, threshold=config.COASTLINE_CHECK_SIZE_THRESHOLD_METERS):
     

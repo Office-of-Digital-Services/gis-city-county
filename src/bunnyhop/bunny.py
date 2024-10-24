@@ -402,7 +402,7 @@ class CDTFARetrieve():
         self.fix_individual_values(layer)
 
     def merge(self):
-        merged_layer = "cities_counties_merged"
+        merged_layer = "cities_counties_merged_3310"
         arcpy.management.Merge([self.counties_output_path, self.cities_output_path], merged_layer)
 
         self.merged_output_path = merged_layer
