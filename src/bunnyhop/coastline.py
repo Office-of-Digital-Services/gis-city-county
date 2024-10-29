@@ -60,7 +60,7 @@ def coastal_cut(input_data,
     arcpy.management.DeleteField(prelim_name, remove_fields)
 
     # remove the coastal polygon from the union and remove coastal buffers when all of their geometry has been moved back to the city.
-    arcpy.analysis.Select(prelim_name, output_name, "(LEGAL_PLACE_NAME <> '' and PLACE_TYPE <> '' and PLACE_NAME <> '') and Shape_Area > 1")  # remove the large off-coast polygon. 
+    arcpy.analysis.Select(prelim_name, output_name, "(LEGAL_PLACE_NAME <> '' or PLACE_TYPE <> '' or PLACE_NAME <> '') and Shape_Area > 1")  # remove the large off-coast polygon. 
 
     # set COASTAL to NULL when it's blank so it's more normal.
     arcpy.management.CalculateField(output_name, "COASTAL", "None if !COASTAL! == '' else !COASTAL!")
