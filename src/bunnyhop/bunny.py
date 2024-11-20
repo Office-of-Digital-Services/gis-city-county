@@ -358,8 +358,14 @@ class CDTFARetrieve():
         self.add_and_calculate_area_field(self.cities_output_path)
         self.add_and_calculate_area_field(self.counties_output_path)
 
+        self.add_guids()  # we add them, but we don't use them - they're just to make sure offline sync works
+
         self.cities_output_path = self.reproject(self.cities_output_path)
         self.counties_output_path = self.reproject(self.counties_output_path)
+
+    def add_guids(self):
+        self.log.debug("Adding GUIDs")
+        arcpy.management.AddGlobalIDs([self.cities_output_path, self.counties_output_path])
 
     def _join_individual(self, layer, dla_table, counties=False):
         """
@@ -403,7 +409,7 @@ class CDTFARetrieve():
 
     def merge(self):
         merged_layer = "cities_counties_merged_3310"
-        arcpy.management.Merge([self.counties_output_path, self.cities_output_path], merged_layer)
+        arcpy.management.Merge([self.cities_output_path, self.counties_output_path], merged_layer)
 
         self.merged_output_path = merged_layer
 
