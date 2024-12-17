@@ -47,7 +47,8 @@ COASTLINE_SLIVER_FIX = True  # should we actually run the sliver fix?
 GET_CDTFA = True
 
 # CDTFA layer via https://gis.data.ca.gov/maps/93f73ae0070240fca9a4d3826ddb83cd/about
-CDTFA_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/1"
+CDTFA_LAYER_URL = "https://services6.arcgis.com/snwvZ3EmaoXJiugR/arcgis/rest/services/City_and_County_Boundary_Line_Changes/FeatureServer/0"
+CDTFA_FLAG_INCOMPLETE_RECORD_COUNT = 500  # how many records should the CDTFA layer have? If it has less than this, raise an error. Occasionally they'll change the layer IDs and we'll get the annexations for the year rather than the full layer. This catches that instead of getting a random crash.
 
 # These adjustments are more crude replacements, but they're because of challenges created in the
 # rest of the workflow that don't work well with coincident cities/counties (where they're one in the same boundary).

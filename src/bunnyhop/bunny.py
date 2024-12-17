@@ -221,6 +221,9 @@ class CDTFARetrieve():
             # operates in place, so we can keep the same path
             arcpy.management.RepairGeometry(str(self.cdtfa_input_path), delete_null=False)
 
+        if int(arcpy.management.GetCount(str(self.cdtfa_input_path))[0]) < config.CDTFA_FLAG_INCOMPLETE_RECORD_COUNT:
+            raise ValueError("CDTFA layer has insufficient record count - this typically means they changed the layer IDs on their services and we're now pulling in the wrong data. Find the correct service URL with layer ID and replace it in the configuration.")
+
         self.cities_pathway()
         self.counties_pathway()
 
