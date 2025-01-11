@@ -20,6 +20,27 @@ DEBUG_GNIS_FILE = os.path.join(_current_folder, "data", "gnis_raw_input_data.csv
 
 FILE_GITHUB_ISSUES = False
 
+## Field names
+FIELD_NAMES = {}
+FIELD_NAMES['city'] = 'CDTFA_CITY'
+FIELD_NAMES['copri'] = 'CDTFA_COPRI'
+FIELD_NAMES['county'] = 'CDTFA_COUNTY'
+FIELD_NAMES['place_name'] = 'CENSUS_PLACE_NAME'
+FIELD_NAMES['geoid'] = 'CENSUS_GEOID'
+FIELD_NAMES['place_type'] = 'CENSUS_PLACE_TYPE'
+FIELD_NAMES['legal_place_name'] = 'GNIS_PLACE_NAME'
+FIELD_NAMES['gnis_id'] = 'GNIS_ID'
+FIELD_NAMES['place_abbr'] = 'CDT_CITY_ABBR'
+FIELD_NAMES['cnty_abbr'] = 'CDT_COUNTY_ABBR'
+FIELD_NAMES['coastal'] = 'OFFSHORE'
+
+CDTFA_FIELD_MAP = {
+    "COPRI": FIELD_NAMES['copri'],
+    "COUNTY": FIELD_NAMES['county'],
+    "CITY": FIELD_NAMES['city']
+}
+
+
 # Set REPROJECT_TO to None to disable reprojection
 REPROJECT_TO = arcpy.SpatialReference(3310)
 CALCULATE_AREA_IN_CRS = arcpy.SpatialReference(3310)
@@ -27,8 +48,8 @@ CALCULATE_AREA_UNITS_USER = "SqMi"  # for the field name
 CALCULATE_AREA_UNITS = "SQUARE_MILES_INT"  # provided to ArcGIS - we can calculate in Miles even in a CRS that is in meters. The important point is that the CRS is equal area.
 
 ### COASTLINE CONFIGS ###
-COASTLINE_LAYER_URL: str = "https://services3.arcgis.com/uknczv4rpevve42E/arcgis/rest/services/California_Cartographic_Coastal_Polygons/FeatureServer/19"
-COASTLINE_EXCLUSION_FIELD: str = "coastal"
+COASTLINE_LAYER_URL: str = "https://services3.arcgis.com/uknczv4rpevve42E/arcgis/rest/services/California_Cartographic_Coastal_Polygons/FeatureServer/31"
+COASTLINE_EXCLUSION_FIELD: str = "OFFSHORE"
 COASTLINE_COUNTIES_EXCLUDE: tuple = ("ocean",)
 COASTLINE_CITIES_EXCLUDE: tuple = ("ocean", "bay")
 
@@ -53,16 +74,27 @@ CDTFA_FLAG_INCOMPLETE_RECORD_COUNT = 500  # how many records should the CDTFA la
 # These adjustments are more crude replacements, but they're because of challenges created in the
 # rest of the workflow that don't work well with coincident cities/counties (where they're one in the same boundary).
 # It's worth just patching these values in at the end.
-CDTFA_ADJUST = [
-    {
-        "where": {"PLACE_NAME": "San Francisco County"},
-        "field": {"COPRI": "38000"}
-    },
-    {
-        "where": {"PLACE_NAME": "San Francisco County"},
-        "field": {"LEGAL_PLACE_NAME": "San Francisco County"}
-    }
-]
+#CDTFA_ADJUST = [
+#    {
+#        "where": {"PLACE_NAME": "San Francisco County"},
+#        "field": {"COPRI": "38000"}
+#    },
+#    {
+#        "where": {"PLACE_NAME": "San Francisco County"},
+#        "field": {"LEGAL_PLACE_NAME": "San Francisco County"}
+#    }
+#]
+
+adjustment1 = {"where": {}, "field": {}}
+adjustment1["where"][FIELD_NAMES['place_name']] = "San Francisco County"
+adjustment1["field"][FIELD_NAMES['copri']] = "38000"
+
+adjustment2 = {"where": {}, "field": {}}
+adjustment2["where"][FIELD_NAMES['place_name']] = "San Francisco County"
+adjustment2["field"][FIELD_NAMES['legal_place_name']] = "San Francisco County"
+
+CDTFA_ADJUST = [adjustment1,adjustment2]
+
 
 ### DLA CONFIGS ###
 DLA_SOURCE_TABLE_URL = "https://services3.arcgis.com/uknczv4rpevve42E/arcgis/rest/services/Place_Abbreviations/FeatureServer/15"

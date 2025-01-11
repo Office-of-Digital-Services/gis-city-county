@@ -21,7 +21,7 @@ import arcgis
 import pandas
 
 
-def process_gnis(local_gnis_table, adjustments=config.GNIS_ADJUSTMENTS):
+def process_gnis(local_gnis_table, adjustments=config.GNIS_ADJUSTMENTS, field_names=config.FIELD_NAMES):
     # copy the GNIS table out of Excel in one shot - we'll get more predictable outputs
     # this way rather than trying to query/select an Excel table
     log = logging.getLogger("bunnyhop")
@@ -36,8 +36,8 @@ def process_gnis(local_gnis_table, adjustments=config.GNIS_ADJUSTMENTS):
     arcpy.analysis.TableSelect(in_table=gnis_raw_input_table, out_table=gnis_filtered_table, where_clause="state_name = 'California' And feature_class = 'Civil' And (census_class_code = 'H1' Or census_class_code = 'C1')")
 
     log.debug("Adding LEGAL_PLACE_NAME field")
-    arcpy.management.AddField(in_table=gnis_filtered_table, field_name="LEGAL_PLACE_NAME", field_type="Text", field_is_nullable=True)
-    arcpy.management.AddField(in_table=gnis_filtered_table, field_name="GNIS_ID", field_type="LONG", field_is_nullable=True)
+    arcpy.management.AddField(in_table=gnis_filtered_table, field_name=field_names['legal_place_name'], field_type="Text", field_is_nullable=True)
+    arcpy.management.AddField(in_table=gnis_filtered_table, field_name=field_names['gnis_id'], field_type="LONG", field_is_nullable=True)
     arcpy.management.AddField(in_table=gnis_filtered_table, field_name="GNIS_JOIN_NAME", field_type="Text", field_is_nullable=True)
 
     calc_field_code_block = """
@@ -58,16 +58,16 @@ def split_name(classcode, name):
                                       code_block=calc_field_code_block
                                     )
     
-    log.debug("Filling in LEGAL_PLACE_NAME field")
+    log.debug(f"Filling in {field_names['legal_place_name']} field")
     arcpy.management.CalculateField(in_table=gnis_filtered_table,
-                                      field="LEGAL_PLACE_NAME",
+                                      field=field_names['legal_place_name'],
                                       expression="!feature_name!",
                                       expression_type="PYTHON3",
                                     )
     
-    log.debug("Filling in GNIS_ID field")
+    log.debug(f"Filling in {field_names['gnis_id']} field")
     arcpy.management.CalculateField(in_table=gnis_filtered_table,
-                                      field="GNIS_ID",
+                                      field=field_names['gnis_id'],
                                       expression="!feature_id!",
                                       expression_type="PYTHON3",
                                     )
@@ -101,7 +101,7 @@ def replace_values(field_value):
     log.info("GNIS processing complete")
     return gnis_filtered_table
 
-def process_census(local_census_table):
+def process_census(local_census_table, field_names=config.FIELD_NAMES):
     # copy the GNIS table out of Excel in one shot - we'll get more predictable outputs
     # this way rather than trying to query/select an Excel table
 
@@ -112,13 +112,13 @@ def process_census(local_census_table):
     arcpy.management.CopyRows(in_rows=str(local_census_table), out_table=census_input_table)
 
     log.debug("Adding Census fields")
-    arcpy.management.AddField(in_table=census_input_table, field_name="PLACE_TYPE", field_type="Text", field_is_nullable=True)
-    arcpy.management.AddField(in_table=census_input_table, field_name="PLACE_NAME", field_type="Text", field_is_nullable=True)
-    arcpy.management.AddField(in_table=census_input_table, field_name="GEOID", field_type="Text", field_is_nullable=True)
+    arcpy.management.AddField(in_table=census_input_table, field_name=field_names['place_type'], field_type="Text", field_is_nullable=True)
+    arcpy.management.AddField(in_table=census_input_table, field_name=field_names['place_name'], field_type="Text", field_is_nullable=True)
+    arcpy.management.AddField(in_table=census_input_table, field_name=field_names['geoid'], field_type="Text", field_is_nullable=True)
 
-    log.debug("Calculating Census Place_Type")
+    log.debug(f"Calculating {field_names['place_type']}")
     arcpy.management.CalculateField(in_table=census_input_table,
-                                    field="PLACE_TYPE",
+                                    field=field_names['place_type'],
                                     expression="!Area_Name!.split()[-1].capitalize()",
                                     expression_type="PYTHON3")
     
@@ -129,25 +129,25 @@ def process_census(local_census_table):
         return area.rsplit(" ", 1)[0]   
     """
     
-    log.debug("Calculating Census Place_Name")
+    log.debug(f"Calculating {field_names['place_name']}")
     arcpy.management.CalculateField(in_table=census_input_table,
-                                    field="PLACE_NAME",
-                                    expression="place_name(!Area_Name!, !PLACE_TYPE!)",
+                                    field=field_names['place_name'],
+                                    expression=f"place_name(!Area_Name!, !{field_names['place_type']}!)",
                                     expression_type="PYTHON3",
                                     code_block=place_name_code_block
                                 )
     
-    type_id_code_block = """def type_id(type, state, county, place):
-    if type=="County":
+    type_id_code_block = """def type_id(ptype, state, county, place):
+    if ptype=="County":
         return f"{state:02}{county:03}"
-    elif type == "Town" or type == "City":
+    elif ptype == "Town" or ptype == "City":
         return f"{state:02}{place:05}"
     """
 
     log.debug("Calculating Census GEOID")
     arcpy.management.CalculateField(in_table=census_input_table,
-                                    field="GEOID",
-                                    expression="type_id(!Place_Type!, !State_FIPS_Code!,!County_FIPS_Code!,!Place_FIPS_Code!)",
+                                    field=field_names['geoid'],
+                                    expression=f"type_id(!{field_names['place_type']}!, !State_FIPS_Code!,!County_FIPS_Code!,!Place_FIPS_Code!)",
                                     expression_type="PYTHON3",
                                     code_block=type_id_code_block
                                 )
@@ -157,7 +157,7 @@ def process_census(local_census_table):
     return census_input_table
 
 
-class CDTFARetrieve():
+class CDTFARetrieve:
     """
         Retrieve and process the CDTFA data layer. This works differently than the others. It's
         already an ArcGIS Feature Service, and we need to do more work on it.
@@ -187,6 +187,7 @@ class CDTFARetrieve():
         self.gnis_table = None
         self.dla_source_table = None
 
+        self.field_names = config.FIELD_NAMES
         self.reproject_to=reproject_to
         self.calculate_area_in_crs=calculate_area_in_crs
         self.calculate_area_units_user = calculate_area_units_user
@@ -224,51 +225,68 @@ class CDTFARetrieve():
         if int(arcpy.management.GetCount(str(self.cdtfa_input_path))[0]) < config.CDTFA_FLAG_INCOMPLETE_RECORD_COUNT:
             raise ValueError("CDTFA layer has insufficient record count - this typically means they changed the layer IDs on their services and we're now pulling in the wrong data. Find the correct service URL with layer ID and replace it in the configuration.")
 
+        self.rename_cdtfa_fields()
+
         self.cities_pathway()
         self.counties_pathway()
+
+    def rename_cdtfa_fields(self, field_map=config.CDTFA_FIELD_MAP):
+        """
+            We want to prefix CDTFA field names. The simplest way in the pipeline is to just do it up front, then delete the old names and use the new ones
+        Returns:
+        """
+
+        for field in field_map:
+            existing_field = field
+            new_field = field_map[field]
+
+            arcpy.management.AddField(str(self.cdtfa_input_path), new_field, "TEXT", field_is_nullable=True)
+            arcpy.management.CalculateField(str(self.cdtfa_input_path), new_field, f"!{existing_field}!", "PYTHON")
+            arcpy.management.DeleteField(str(self.cdtfa_input_path), existing_field)
 
     def cities_pathway(self):
         """
             We want multipart features - one record with possibly many polygons - for each city.
             So, we select out the cities, dissolve them, then add the county information back in.
         """
+
         self.log.info("Beginning processing cities")
         self.log.debug("Selecting out cities")
         cities_working = "cities_working"
         arcpy.analysis.Select(in_features=str(self.cdtfa_input_path),
                                 out_feature_class=cities_working,
-                                where_clause="CITY <> 'Unincorporated'"
+                                where_clause=f"{self.field_names['city']} <> 'Unincorporated'"
         )
 
         self.log.debug("Dissolving cities")
         cities_dissolved = "cities_dissolved"
         arcpy.management.Dissolve(cities_working,
                                     out_feature_class=cities_dissolved,
-                                    dissolve_field="CITY;COPRI",
+                                    dissolve_field=";".join([self.field_names['city'], self.field_names['copri']]),
                                     multi_part=True
         )
 
         # Join the county name back on
         self.log.debug("Attaching county name to cities")
         arcpy.management.JoinField(cities_dissolved,
-                                    in_field="CITY",
+                                    in_field=self.field_names['city'],
                                     join_table=str(self.cdtfa_input_path),
-                                    join_field="CITY",
-                                    fields="COUNTY",
+                                    join_field=self.field_names['city'],
+                                    fields=self.field_names['county'],
                                     index_join_fields="NEW_INDEXES"
         )
 
-        self.log.debug("Adding PLACE_NAME field")
+        self.log.debug(f"Adding {self.field_names['place_name']} field")
         arcpy.management.AddField(in_table=cities_dissolved,
-                                  field_name="PLACE_NAME",
+                                  field_name=self.field_names['place_name'],
                                   field_type="Text",
                                   field_is_nullable=True
         )
 
-        self.log.debug("Calculating PLACE_NAME field")
+        self.log.debug(f"Calculating {self.field_names['place_name']} field")
         arcpy.management.CalculateField(cities_dissolved,
-                                        "PLACE_NAME",
-                                        "!CITY!")
+                                        self.field_names['place_name'],
+                                        f"!{self.field_names['city']}!")
 
         self.cities_output_path = cities_dissolved
 
@@ -285,44 +303,44 @@ class CDTFARetrieve():
         counties_copri_working = "counties_copri_working"
         arcpy.analysis.Select(in_features=str(self.cdtfa_input_path),
                                 out_feature_class=counties_copri_working,
-                                where_clause="CITY = 'Unincorporated'"
+                                where_clause=f"{self.field_names['city']} = 'Unincorporated'"
                             )
         
         self.log.debug("Dissolving counties to get COPRI IDs")
         counties_copri_ids = "counties_copri_ids"
         arcpy.management.Dissolve(counties_copri_working,
                                     out_feature_class=counties_copri_ids,
-                                    dissolve_field="COUNTY;COPRI"
+                                    dissolve_field=";".join([self.field_names['county'], self.field_names['copri']]),
                                 )
         
         self.log.debug("Dissolving counties to get full boundary")
         counties_working = "counties_working"
         arcpy.management.Dissolve(in_features=str(self.cdtfa_input_path),
                                     out_feature_class=counties_working,
-                                    dissolve_field="COUNTY"
+                                    dissolve_field=self.field_names['county']
                                 )
         
         self.log.debug("Attaching county COPRI IDs")
         arcpy.management.JoinField(
             in_data=counties_working,
-            in_field="COUNTY",
+            in_field=self.field_names['county'],
             join_table=counties_copri_ids,
-            join_field="COUNTY",
-            fields="COPRI",
+            join_field=self.field_names['county'],
+            fields=self.field_names['copri'],
             index_join_fields="NEW_INDEXES"
         )
         
-        self.log.debug("Adding PLACE_NAME field to county")
+        self.log.debug(f"Adding {self.field_names['place_name']} field to county")
         arcpy.management.AddField(in_table=counties_working,
-                                  field_name="PLACE_NAME",
+                                  field_name=self.field_names['place_name'],
                                   field_type="Text",
                                   field_is_nullable=True
         )
 
-        self.log.debug("Calculating County PLACE_NAME field")
+        self.log.debug(f"Calculating County {self.field_names['place_name']} field")
         arcpy.management.CalculateField(counties_working,
-                                        "PLACE_NAME",
-                                        "!COUNTY!")
+                                        self.field_names['place_name'],
+                                        f"!{self.field_names['county']}!")
         
         self.counties_output_path = counties_working
         
@@ -382,28 +400,28 @@ class CDTFARetrieve():
 
         arcpy.management.JoinField(
             layer,
-            in_field="PLACE_NAME",
+            in_field=self.field_names['place_name'],
             join_table=self.census_table,
-            join_field="PLACE_NAME",
-            fields="GEOID;PLACE_TYPE",
+            join_field=self.field_names['place_name'],
+            fields=";".join([self.field_names['geoid'],self.field_names['place_type']]),
             index_join_fields="NEW_INDEXES"
         )
 
         arcpy.management.JoinField(
             layer,
-            in_field="PLACE_NAME",
+            in_field=self.field_names['place_name'],
             join_table=self.gnis_table,
             join_field="GNIS_JOIN_NAME",
-            fields="LEGAL_PLACE_NAME;GNIS_ID",
+            fields=";".join([self.field_names['legal_place_name'],self.field_names['gnis_id']]),
             index_join_fields="NEW_INDEXES"
         )
 
         arcpy.management.JoinField(
             layer,
-            in_field="Place_Name",
+            in_field=self.field_names["place_name"],
             join_table=dla_table,
-            join_field="PLACE_NAME",
-            fields="PLACE_ABBR;CNTY_ABBR",
+            join_field="CENSUS_PLACE_NAME",
+            fields=";".join([self.field_names['place_abbr'],self.field_names['cnty_abbr']]),
             index_join_fields="NEW_INDEXES"
         )
 

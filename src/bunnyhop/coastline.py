@@ -60,17 +60,17 @@ def coastal_cut(input_data,
     arcpy.management.DeleteField(prelim_name, remove_fields)
 
     # remove the coastal polygon from the union and remove coastal buffers when all of their geometry has been moved back to the city.
-    arcpy.analysis.Select(prelim_name, output_name, "(LEGAL_PLACE_NAME <> '' or PLACE_TYPE <> '' or PLACE_NAME <> '') and Shape_Area > 1")  # remove the large off-coast polygon.
+    arcpy.analysis.Select(prelim_name, output_name, f"({config.FIELD_NAMES['legal_place_name']} <> '' or {config.FIELD_NAMES['place_type']} <> '' or {config.FIELD_NAMES['place_name']} <> '') and Shape_Area > 1")  # remove the large off-coast polygon.
 
-    # set COASTAL to NULL when it's blank so it's more normal.
-    arcpy.management.CalculateField(output_name, "COASTAL", "None if !COASTAL! == '' else !COASTAL!")
+    # set OFFSHORE to NULL when it's blank so it's more normal.
+    arcpy.management.CalculateField(output_name, config.FIELD_NAMES['coastal'], f"None if !{config.FIELD_NAMES['coastal']}! == '' else !{config.FIELD_NAMES['coastal']}!")
 
 def fix_slivers(input, keep_fragment_geoms=config.COASTLINE_KEEP_FRAGMENTS_IN_GEOMS, threshold=config.COASTLINE_CHECK_SIZE_THRESHOLD_METERS):
     
     polys_by_name = defaultdict(lambda: [])  # we'll index polygons by name here
 
-    with arcpy.da.UpdateCursor(input, field_names=["SHAPE@", "LEGAL_PLACE_NAME", "OID@"]) as cursor:
-        for row in cursor:  # pull them out so we we can address them by place name
+    with arcpy.da.UpdateCursor(input, field_names=["SHAPE@", config.FIELD_NAMES['legal_place_name'], "OID@"]) as cursor:
+        for row in cursor:  # pull them out so we can address them by place name
             polys_by_name[row[1]].append(row)
 
         for place in polys_by_name:
@@ -105,7 +105,7 @@ def fix_slivers(input, keep_fragment_geoms=config.COASTLINE_KEEP_FRAGMENTS_IN_GE
             polys_by_name[place][0] = place1
             polys_by_name[place][1] = place2
 
-    with arcpy.da.UpdateCursor(input, field_names=["SHAPE@", "LEGAL_PLACE_NAME", "OID@"]) as cursor:
+    with arcpy.da.UpdateCursor(input, field_names=["SHAPE@", config.FIELD_NAMES['legal_place_name'], "OID@"]) as cursor:
         rows_by_oid = {}
         for name in polys_by_name:  # index the rows by their OID so we can easily look them up to run the update
             for row in polys_by_name[name]:
