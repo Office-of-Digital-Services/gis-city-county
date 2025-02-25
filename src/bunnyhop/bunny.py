@@ -15,6 +15,8 @@ import json
 from . import config
 from . import retrieve
 from . import coastline
+from . import primary_domain
+from . import census_population
 
 import arcpy
 import arcgis
@@ -203,6 +205,7 @@ class CDTFARetrieve:
         self.process_cdtfa_layer()
         self.run_joins()
         self.add_fields_and_reproject_both()
+        self.generate_unincorporated_areas()
         self.merge()
 
     def retrieve_cdtfa_layer(self):
@@ -356,6 +359,7 @@ class CDTFARetrieve:
         self.log.debug("Joining Tables")
         self._join_individual(self.cities_output_path, dla_table="dla_source_data")
         self._join_individual(self.counties_output_path, dla_table="dla_source_data")
+        self.add_cdt_name_field()
 
     def add_fields_and_reproject_both(self):
         """
@@ -383,6 +387,37 @@ class CDTFARetrieve:
 
         self.cities_output_path = self.reproject(self.cities_output_path)
         self.counties_output_path = self.reproject(self.counties_output_path)
+
+        arcpy.management.DeleteField(self.counties_output_path, [self.field_names['place_abbr']])
+
+    def generate_unincorporated_areas(self):
+        self.log.info("Generating unincorporated areas")
+        unincorporated_areas = "unincorporated_final_3310"
+        arcpy.analysis.Erase(self.counties_output_path, self.cities_output_path, unincorporated_areas)
+
+        arcpy.management.AddField(unincorporated_areas, self.field_names["city"], "TEXT", field_length=255)  # 255 length to be fully compatible with other CDTFA_CITY fields
+        arcpy.management.CalculateField(unincorporated_areas, self.field_names["city"], "'Unincorporated'")
+        self.add_and_calculate_area_field(unincorporated_areas)  # update the area calculations now that we've erased the cities
+        
+        #arcpy.management.CalculateField(unincorporated_areas, self.field_names['county'], f"prepend(!{self.field_names['county']}!)", "PYTHON3",
+        #                            """def prepend(val): return "Unincorporated " + str(val)""")
+
+    def add_cdt_name_field(self):
+        self.log.debug("Adding CDT Name Field")
+        arcpy.management.AddField(self.cities_output_path, self.field_names["name_short"], "TEXT", field_length=255)
+        arcpy.management.AddField(self.counties_output_path, self.field_names["name_short"], "TEXT", field_length=255)
+
+        field_names_adjustment = """
+def strip_extra(value):
+    value = value.replace('City of ', '')        
+    value = value.replace('Town of ', '')
+    value = value.replace(" County", '')
+    
+    return value
+"""
+
+        arcpy.management.CalculateField(self.cities_output_path, self.field_names["name_short"], f"strip_extra(!{self.field_names['legal_place_name']}!)", "PYTHON3", field_names_adjustment)
+        arcpy.management.CalculateField(self.counties_output_path, self.field_names["name_short"], f"strip_extra(!{self.field_names['legal_place_name']}!)", "PYTHON3", field_names_adjustment)
 
     def add_guids(self):
         self.log.debug("Adding GUIDs")
@@ -428,6 +463,9 @@ class CDTFARetrieve:
         # we need to run this after the joins because it can fix values that are joined in
         self.fix_individual_values(layer)
 
+        primary_domain.add_primary_domain(layer)
+        census_population.add_population(layer)
+
     def merge(self):
         merged_layer = "cities_counties_merged_3310"
         arcpy.management.Merge([self.cities_output_path, self.counties_output_path], merged_layer)
@@ -460,7 +498,7 @@ class CDTFARetrieve:
             return features
 
     def add_and_calculate_area_field(self, features):
-        area_field = f"AREA_{self.calculate_area_units_user}"
+        area_field = f"AREA_{self.calculate_area_units_user}".upper()
         
         arcpy.management.CalculateGeometryAttributes(in_features=features,
                                                       geometry_property=[[area_field, "AREA"]],

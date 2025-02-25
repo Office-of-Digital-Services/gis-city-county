@@ -28,10 +28,13 @@ FIELD_NAMES['county'] = 'CDTFA_COUNTY'
 FIELD_NAMES['place_name'] = 'CENSUS_PLACE_NAME'
 FIELD_NAMES['geoid'] = 'CENSUS_GEOID'
 FIELD_NAMES['place_type'] = 'CENSUS_PLACE_TYPE'
+FIELD_NAMES['population'] = 'CENSUS_POPULATION'
 FIELD_NAMES['legal_place_name'] = 'GNIS_PLACE_NAME'
 FIELD_NAMES['gnis_id'] = 'GNIS_ID'
 FIELD_NAMES['place_abbr'] = 'CDT_CITY_ABBR'
 FIELD_NAMES['cnty_abbr'] = 'CDT_COUNTY_ABBR'
+FIELD_NAMES['name_short'] = "CDT_NAME_SHORT"
+FIELD_NAMES['primary_domain'] = 'PRIMARY_DOMAIN'
 FIELD_NAMES['coastal'] = 'OFFSHORE'
 
 CDTFA_FIELD_MAP = {
@@ -50,7 +53,7 @@ CALCULATE_AREA_UNITS = "SQUARE_MILES_INT"  # provided to ArcGIS - we can calcula
 ### COASTLINE CONFIGS ###
 COASTLINE_LAYER_URL: str = "https://services3.arcgis.com/uknczv4rpevve42E/arcgis/rest/services/California_Cartographic_Coastal_Polygons/FeatureServer/31"
 COASTLINE_EXCLUSION_FIELD: str = "OFFSHORE"
-COASTLINE_COUNTIES_EXCLUDE: tuple = ("ocean",)
+COASTLINE_COUNTIES_EXCLUDE: tuple = ("ocean", "bay")
 COASTLINE_CITIES_EXCLUDE: tuple = ("ocean", "bay")
 
 COASTLINE_CHECK_SIZE_THRESHOLD_METERS= 100000
