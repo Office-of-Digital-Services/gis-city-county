@@ -34,8 +34,8 @@ systems that can read ArcGIS FeatureServer endpoints.
    * Line source (Coming Soon)
 
 ## Related Projects Used Here
-* [gis-agolbluegreen](Office-of-Digital-Services/gis-agolbluegreen) - Python package to manage high availability by swapping views
-* [arcpy_metadata](Office-of-Digital-Services/arcpy_metadata) - Python package to edit metadata
+* [gis-agolbluegreen](Office-of-Digital-Services/gis-agolbluegreen) - Python package to manage high availability services in ArcGIS Online by swapping views
+* [arcpy_metadata](Office-of-Digital-Services/arcpy_metadata) - Python package to edit metadata on ArcGIS data sources
 
 ## Package Requirements
 BunnyHop is designed to run in a Python environment that has both the `arcpy` and `arcgis` package installed. The `arcgis` Python
