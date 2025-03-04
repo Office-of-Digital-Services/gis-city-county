@@ -1,5 +1,5 @@
 # California Administrative Boundaries Data Pipeline
-BunnyHop is ETL code for:
+This project provides ETL code for:
 1. Retrieving authoritative city/county boundaries from CDTFA,
 2. Processing them using Python/ArcGIS to change the spatial data structure and add attributes for CalTrans
 3. Publishing the results to ArcGIS Online
@@ -11,7 +11,7 @@ We have a [service status page on the state geoportal](https://gis.data.ca.gov/p
 
 Our detailed [roadmap is being built out in this project](https://github.com/orgs/Office-of-Digital-Services/projects/14/views/3).
 
-Please file an issue with any change requests for the code.
+Please [file an issue](./issues) with any change requests for the code.
 
 ## Deployed Data Services
 Deployed data services are feature services in ArcGIS Online - though they may also be accessed in QGIS or other GIS
