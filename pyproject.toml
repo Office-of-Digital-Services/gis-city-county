@@ -26,4 +26,5 @@ lint = [
 ]
 dev = [
     "bunnyhop[test,lint]",
+    "python-certifi-win32"
 ]

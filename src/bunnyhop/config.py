@@ -151,7 +151,7 @@ IN_ARCGIS_ONLINE_NOTEBOOKS = True if os.getcwd() == "/arcgis" else False
 FOLDER_WORKSPACE: Optional[pathlib.PurePath] = None
 GDB_WORKSPACE: Optional[pathlib.PurePath] = None
 
-
+REQUESTS_UA = "CDT_GIS_BUNNYHOP - gis@state.ca.gov"
 
 
 def create_workspace():

@@ -1,5 +1,6 @@
 from . import config
 
+
 from typing import Optional
 import pathlib
 import zipfile
@@ -9,6 +10,7 @@ import logging
 import requests
 import pandas
 
+import certifi
 
 
 def retrieve_gnis(source=config.GNIS_URL, output_folder: Optional[pathlib.PurePath]=None) -> pandas.DataFrame:
@@ -50,7 +52,7 @@ def retrieve_gnis(source=config.GNIS_URL, output_folder: Optional[pathlib.PurePa
 def download_file(source, extension):
     
     file_local: str = tempfile.mktemp(suffix=f".{extension}", prefix="bunnyhop_gnis")  # we could probably do this all in memory, but lets not and avoid a class of bugs
-    with requests.get(source, stream=True) as response:
+    with requests.get(source, headers={"User-Agent": config.REQUESTS_UA}, verify=certifi.where(), stream=True) as response:
         response.raise_for_status()
         with open(file=file_local, mode='wb') as outf:  # write out the file's data into a tempfile by chunk
             for chunk in response.iter_content(chunk_size=4096):
@@ -92,7 +94,7 @@ def _check_for_year_census_file(year, filepath_on_success):
     census_file = config.CENSUS_FILE_URL.substitute(year=year)
 
     # check for the year's file
-    if requests.head(census_file).status_code != 404:
+    if requests.head(census_file, headers={"User-Agent": config.REQUESTS_UA}, verify=certifi.where()).status_code == 200:
         census_local = download_file(census_file, "xlsx")
         df = pandas.read_excel(census_local,
                                 skiprows=4,
