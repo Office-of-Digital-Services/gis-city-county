@@ -18,7 +18,7 @@ readme = "README.md"
 
 [project.optional-dependencies]
 test = [
-    "pytest == 8.2.0",
+    "pytest == 9.0.3",
 ]
 lint = [
     "flake8",

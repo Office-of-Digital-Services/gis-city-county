@@ -4,5 +4,5 @@ arcgis~=2.3.1
 certifi~=2024.7.4
 python-certifi-win32
 bunnyhop~=2024.7.24
-pytest~=7.4.3
+pytest~=9.0.3
 agol_bluegreen~=2024.12.17
